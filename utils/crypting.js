@@ -35,6 +35,7 @@ function encrypt(text, secretKey) {
 /**
  *
  * @param {String} encryptedText
+ * @returns {{content: String, secretKey: String}}
  */
 function decrypt(encryptedText, secretKey) {
   const algorithm = "aes-256-ctr";

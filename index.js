@@ -1,5 +1,5 @@
 import express from "express";
-import { v4 as uuidV4 } from "uuid";
+import { nanoid } from "nanoid";
 import cors from "cors";
 import * as fs from "fs";
 import { hash, encrypt, decrypt } from "./utils/crypting.js";
@@ -21,7 +21,7 @@ app.get("/", (_req, res) => {
 app.get("/new-token", async (req, res) => {
   const devToken = req.headers.authToken; // cooler xD
   const json = {};
-  const uid = uuidV4();
+  const uid = nanoid();
   if (devToken === developerToken) {
     try {
       if (fs.existsSync(`${__dirname}/users.json`)) {
@@ -58,7 +58,7 @@ app.post("/create-user", async (req, res) => {
   const authorization = req.headers.authToken;
   if (authorization === developerToken) {
     const userId = req.body.userId;
-    const auth = uuidV4();
+    const auth = nanoid();
     const storeAuth = hash(auth);
     const json = JSON.parse(fs.readFileSync("./users.json"));
     json[userId] = storeAuth;
@@ -166,7 +166,11 @@ app.post("/add-data", (req, res) => {
     });
 
   const data = JSON.parse(
-    fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+    decrypt(
+      JSON.stringify(
+        fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+      )
+    ).content
   );
 
   const newData = {
@@ -193,7 +197,11 @@ app.delete("/delete-data", (req, res) => {
     });
 
   const data = JSON.parse(
-    fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+    decrypt(
+      JSON.stringify(
+        fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+      )
+    ).content
   );
 
   delete data[req.body.key];
@@ -213,6 +221,48 @@ app.delete("/delete-collection", (req, res) => {
     });
 
   fs.unlinkSync(`./database/${userId}/${req.body.databaseName}.json`);
+});
+
+app.get("/get-data-all", (req, res) => {
+  const userId = req.headers.authId;
+  const authTokenBeforeHash = req.headers.authToken;
+  const authToken = hash(authTokenBeforeHash);
+  const allUserInformation = JSON.parse(fs.readFileSync("./users.json"));
+  const userPass = allUserInformation[userId];
+
+  if (authToken !== userPass)
+    return res.status(403).json({
+      message: "Forbidden",
+    });
+
+  const data = JSON.parse(
+    decrypt(
+      fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+    ).content
+  );
+
+  res.status(200).send(JSON.stringify(data));
+});
+
+app.get("/get-data", (req, res) => {
+  const userId = req.headers.authId;
+  const authTokenBeforeHash = req.headers.authToken;
+  const authToken = hash(authTokenBeforeHash);
+  const allUserInformation = JSON.parse(fs.readFileSync("./users.json"));
+  const userPass = allUserInformation[userId];
+
+  if (authToken !== userPass)
+    return res.status(403).json({
+      message: "Forbidden",
+    });
+
+  const data = JSON.parse(
+    decrypt(
+      fs.readFileSync(`./database/${userId}/${req.body.databaseName}.json`)
+    ).content
+  );
+
+  res.status(200).send(JSON.stringify(data[req.body.key]));
 });
 
 const PORT = process.env.PORT || 3000;
