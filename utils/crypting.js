@@ -4,6 +4,7 @@ import {
   createCipheriv,
   createDecipheriv,
 } from "node:crypto";
+
 /**
  * @param {String} text
  */
@@ -14,6 +15,7 @@ function hash(text) {
 /**
  * @param {String} text
  * @param {String} secretKey
+ * @returns {{iv: String, content: String, secretKey: String}}
  */
 function encrypt(text, secretKey) {
   const algorithm = "aes-256-ctr";
